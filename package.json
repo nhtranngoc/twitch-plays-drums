@@ -1,0 +1,24 @@
+{
+  "name": "twitch-plays-drums",
+  "version": "1.0.0",
+  "description": "Twitch bot that uses Twitch chat to play musical instruments",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nhtranngoc/twitch-plays-drums.git"
+  },
+  "keywords": [
+    "twitch",
+    "music",
+    "tmi"
+  ],
+  "author": "Nam Tran Ngoc",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nhtranngoc/twitch-plays-drums/issues"
+  },
+  "homepage": "https://github.com/nhtranngoc/twitch-plays-drums#readme"
+}
