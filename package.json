@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/nhtranngoc/twitch-plays-drums/issues"
   },
-  "homepage": "https://github.com/nhtranngoc/twitch-plays-drums#readme"
+  "homepage": "https://github.com/nhtranngoc/twitch-plays-drums#readme",
+  "dependencies": {
+    "tmi.js": "^1.1.1"
+  }
 }
