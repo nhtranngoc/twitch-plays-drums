@@ -21,7 +21,9 @@ board.on("ready", function() {
 				strip.show();
 			} 
 			var p = strip.pixel(i);
+			// Get the Unicode number for the first character of the message
 			var startChar = message.charCodeAt(0);
+			// Convert Unicode number to hex 
 			var color = parseInt(startChar.map(33,126,0,16777215));
 			console.log(color.toString(16));
 
