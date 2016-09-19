@@ -27,6 +27,9 @@ Colors are piped out to a 150-pixels WS2812b Addressable RGB LED strip (aka Adaf
 ## Instructions
 
 - Load node-pixel firmware to Arduino board.
+- Clone GitHub repo. 
+- `npm install`
+- `npm install johnny-five node-pixel` // Since we probably will not be using `node-pixel` in the future
 - Create/edit config.json to use your own account and Oauth password
 - Makes sure johnny-five pin configurations are correct.
 - Run with `node main.js`
