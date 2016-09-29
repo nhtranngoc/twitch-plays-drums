@@ -16,9 +16,9 @@ A Twitch bot that monitor Twitch chat and use it to play musical instruments
 
 Not much. It currently monitors one (or several) Twitch chat channels (which can be set in `config.json`), and send a MIDI message corresponds to a note to a virtual MIDI port. You WILL need a synthesizer for this. Read Instructions for more details. 
 
-~~and set LEDs color based on the first letter of each chat message. This ensures that all memes/copy pastas would be assigned the same color.
+~~and set LEDs color based on the first letter of each chat message. This ensures that all memes/copy pastas would be assigned the same color.~~
 
-Colors are piped out to a 150-pixels WS2812b Addressable RGB LED strip (aka Adafruit NeoPixel). Pixels are incremented on every chat message, and reset back to black upon reaching the last pixel. Rinse and repeat.~~
+~~Colors are piped out to a 150-pixels WS2812b Addressable RGB LED strip (aka Adafruit NeoPixel). Pixels are incremented on every chat message, and reset back to black upon reaching the last pixel. Rinse and repeat.~~
 
 ## What it doesn't do
 
