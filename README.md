@@ -12,6 +12,8 @@ A Twitch bot that monitor Twitch chat and use it to play musical instruments
 - node-midi
 - tmi.js
 
+A note (heh) that node-midi requires the `libasound2-dev` package. On Debian based distribution do `sudo apt-get install libasound2-dev
+
 ## What it currently does
 
 Not much. It currently monitors one (or several) Twitch chat channels (which can be set in `config.json`), and send a MIDI message corresponds to a note to a virtual MIDI port. You WILL need a synthesizer for this. Read Instructions for more details. 
