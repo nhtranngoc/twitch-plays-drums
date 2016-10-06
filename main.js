@@ -1,67 +1,53 @@
 'use strict'
 var tmi = require("tmi.js");
 var midi = require('midi');
+var emotes = require("./emotes.json");
+var instruments = require("./instruments.json");
+var five = require('johnny-five');
+var board = new five.Board({repl: false});
+var options = require("./config.json");
 
 // Set up a new output.
 // Change this to whatever MIDI synthesizer you use. YMMV
 var output = new midi.output();
 output.openPort(1);
 
-// var five = require('johnny-five');
-// var pixel = require('node-pixel');
-// var board = new five.Board({repl: false});
-// var strip = null;
-// var i = 0;
-
-var options = require("./config.json");
 var client = new tmi.client(options);
-var lastNote = 0x00;
 client.connect();
 
+var chatCount = 0;
+var bpm = 60;
+
+setInstrument("acoustic_grand_piano", 1);
+setInstrument("tinkle_bell", 2);	
+
 // board.on("ready", function() {
-// 	strip = new pixel.Strip({
-// 		board: this,
-// 		controller: "FIRMATA",
-// 		strips: [ {pin: 6, length: 150}]
-// 	});
-// 	strip.on("ready", function() {
-		// var led = new five.Led(13);
-		setInstrument(54, 1);
-		client.on("chat", function(channel, user, message, self) {
-		// 	if (i >= 149) {
-		// 	i = 0;
-		// 	strip.color("black");
-		// 	strip.show();
-		// }
-		// 	var p = strip.pixel(i);
-			// Get the Unicode number for the first character of the message
-			var startChar = message.charCodeAt(0);
-			// Convert Unicode number to hex 
-			var color = parseInt(startChar.map(33,126,0,16777215));
-			console.log(color.toString(16));
-
-			// Convert note to MIDI note message.
-			var note = parseInt(startChar.map(33,126,0,127));
-			console.log(note);
-			// Play note with max volume (127), lasts 250ms, and on channel 1. 
-			// playNote(note, 127, 250, 1);
-
-			noteOff(lastNote, 1);
-			noteOn(note, 127, 1);
-			lastNote = note;
-
-			// p.color("#" + color.toString(16));
-			// Update strip and go to next buffer pixel;
-		  	// Loop back;
-		 	// strip.show();
-		 	// i++;
-		});	
-// 	});
+	client.on("chat", function(channel, user, message, self) {
+		chatCount++;
+		var emote = parseEmote(message, emotes);
+		if (emote) {
+			var percussion = parseInt(emote.charCodeAt(0).map(33,126,0,127));
+			playNote(percussion, 100, getLength(emote, bpm), 2);
+		}
+		// Convert note to MIDI note message.
+		var note = parseInt(message.charCodeAt(0).map(33,126,0,127));
+		// console.log(note);
+		// Play note with max volume (127), lasts x ms, and on channel 1. 
+		playNote(note, 127, getLength(message, bpm), 1);
+	});	
 // })
+
+// Beats count over x seconds
+var duration = 5;
+var beats = setInterval(function() {
+	bpm = chatCount*60/duration;
+	console.log("BEATS PER MINUTES: " + bpm);
+	chatCount = 0;
+}, duration*1000);
 
 //Copied this from StackOverflow cause I'm lazy.
 Number.prototype.map = function (in_min, in_max, out_min, out_max) {
-  return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+	return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 // Turn on note
@@ -76,42 +62,49 @@ function noteOff(note, channel) {
 }
 
 function allNotesOff() {
-	// var i;
-	// for (i=0;i++;i<16) {
-		// output.sendMessage([176+i-1, 0b01111011, 0b00000000]);
-	// }
 	output.sendMessage([176, 0b01111011, 0b00000000]);
 }
 
 //Play a note by sending output to MIDI
 function playNote( note, velocity, length, channel ) {
-        output.sendMessage([144+channel-1, note, velocity]);
-        setTimeout( function() { 
-                output.sendMessage([144+channel-1, note, 0]); 
-                output.sendMessage([128+channel-1, note, 64]); // also send MIDI note off
-            }, 
-        length );
+	output.sendMessage([144+channel-1, note, velocity]);
+	setTimeout( function() { 
+		output.sendMessage([144+channel-1, note, 0]); 
+        output.sendMessage([128+channel-1, note, 64]); // also send MIDI note off
+    }, length );
 }
 
-function setInstrument (id, channel) {
-	output.sendMessage([192+channel-1, id]);
+function setInstrument (instrument, channel) {
+	output.sendMessage([192+channel-1, instruments[instrument]-1]);
 }
 
-// New message come in, calculate delay between lastbpm and thisbpm, extrapolate to bpm
-// var buffer = [];
-// function calculateBPM (lastBPM) {
+function parseEmote(text, emotes) {
+	var splitText = text.split('');
+	for (var i in emotes.emotes) {
+		var re = new RegExp(i,"gi");
+		if (text.match(re)) {
+			// console.log("Matched: " + i);
+			return i;
+		}
+		else return false;
+	}
+}
 
+// Returns note length based on chat message length and beats per minute
+function getLength(text, bpm) {
+	// console.log(parseInt(text.length/10*(15/bpm)*1000));
+	return parseInt(text.length/10*(15/bpm)*1000);
+}
+
+// function exitHandler() {
+// 	console.log("Exiting...");
+// 	allNotesOff();
+// 	output.closePort();
+// 	process.exit();
 // }
 
-function exitHandler() {
-	console.log("Exiting...");
-	allNotesOff();
-	output.closePort();
-	process.exit();
-}
+// // catches close event
+// process.on('exit', exitHandler);
 
-// catches close event
-process.on('exit', exitHandler);
-
-//catches ctrl+c event
-process.on('SIGINT', exitHandler);
+// //catches ctrl+c event
+// process.on('SIGINT', exitHandler);
