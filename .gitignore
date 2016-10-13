@@ -1,5 +1,6 @@
-config.json
 
+data/config.json
+data/config_2.json
 # Logs
 logs
 *.log
