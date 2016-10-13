@@ -23,6 +23,9 @@ mainClient.connect();
 var chatCount = 0;
 var bpm = 60;
 var servo1, servo2;
+var channelList = new Set();
+var horz1, horz2, horz3, horz4, vert1, vert2;
+var intervalObject = {};
 
 //Flags
 var monitorFlag;
@@ -31,12 +34,12 @@ var monitorFlag;
 // midiHelper.setInstrument("violin", 2);
 
 board.on("ready", function() {
-	var vert2 = new five.Servo({pin: 11});
-	var vert1 = new five.Servo({pin: 10});
-	var horz4 = new five.Servo({pin: 9});
-	var horz3 = new five.Servo({pin: 6});
-	var horz2 = new	five.Servo({pin: 5});
-	var horz1 = new	five.Servo({pin: 3});
+	vert2 = new five.Servo({pin: 11});
+	vert1 = new five.Servo({pin: 10});
+	horz4 = new five.Servo({pin: 9});
+	horz3 = new five.Servo({pin: 6});
+	horz2 = new	five.Servo({pin: 5});
+	horz1 = new	five.Servo({pin: 3});
 
 	// var servos = new five.Servos([horz1, horz2, horz3, horz4, vert1, vert2]);
 	var servos = new five.Servos([horz1, horz2, horz4, vert1, vert2]);
@@ -59,9 +62,10 @@ board.on("ready", function() {
 				break;
 
 				case "startMonitor":
-				if (argv[1] == "twitchplaysdrums" || !argv[1]) {
+				if (argv[1] == "twitchplaysdrums" || argv[1] == null) {
 					mainClient.say(options.channels[0], "Started monitoring.");
 					monitorFlag = true;
+					channelList.add("twitchplaysdrums");
 					break;
 				} else {
 					mainClient.join(argv[1])
@@ -69,6 +73,7 @@ board.on("ready", function() {
 						console.log("Joined channel " + argv[1]);
 						mainClient.say(options.channels[0], "Successfully joined channel " + argv[1]);
 						monitorFlag = true;
+						channelList.add(argv[1]);
 					})
 					.catch(function(err) {
 						console.log(err);
@@ -78,9 +83,10 @@ board.on("ready", function() {
 				}
 
 				case "stopMonitor":
-				if (argv[1] == "twitchplaysdrums" || !argv[1]) {
+				if (argv[1] == "twitchplaysdrums" || argv[1] == null) {
 					// mainClient.say(options.channels[0], "I'm sorry Dave, I'm afraid I can't do that.");
 					mainClient.say(options.channels[0], "Stopped monitoring.");
+					channelList.delete("twitchplaysdrums");
 					monitorFlag = false;
 					break;
 				} else {
@@ -89,6 +95,7 @@ board.on("ready", function() {
 						console.log("Left channel " + argv[1]);
 						mainClient.say(options.channels[0], "Successfully disconnected from channel " + argv[1]);
 						monitorFlag = false;
+						channelList.delete(argv[1]);
 					})
 					.catch(function(err) {
 						console.log(err);
@@ -96,72 +103,125 @@ board.on("ready", function() {
 					})
 				}
 				break;
+
+				case "listMonitor":
+				mainClient.say(options.channels[0], [...channelList].join(", "));
+				break;
+
+				// Servo [0 to 5], repeat every x milliseconds
+				case "addInterval":
+				var intervalName  = argv[1]
+				var intervalIndex = argv[2];
+				var intervalDelay = argv[3];
+				break;
 			}
 		} else if (monitorFlag) {
 			chatCount++;
 			var emote = parseEmote(message);
 			if (emote) {
 				// Percussion value from 0 to 127;
-				var percussion = parseInt(emote.charCodeAt(0).map(33,126,0,127));
-				console.log(percussion);
-				if (percussion < 63) {
-					playServo(vert1, 500);
+				var percussion = parseInt(emote.charCodeAt(0).map(48,122,0,1));
+				if (percussion) {
+					playServoX(4, 500);
 				} else {
-					playServo(vert2, 500);
+					playServoX(5, 500);
 				}
+			}
+
+			var note = parseInt(message.charCodeAt(0).map(48,122,0,3));
+			switch(note) {
+				case 0:
+				playServoX(0, 300);
+				break;
+
+				case 1:
+				playServoX(1, 300);
+				break;
+
+				case 2:
+				playServoX(2, 300);
+				break;
+
+				default:
+				playServoX(3, 300);
+				break;
 			}
 		}
 	});	
-
-	// monitorClient.on("chat", function(channel, user, message, self) {
-	// 	chatCount++;
-	// 	var emote = parseEmote(message, emotes);
-	// 	if (emote) {
-	// 		var percussion = parseInt(emote.charCodeAt(0).map(33,126,0,127));
-	// 		midiHelper.playNote(percussion, 127, getLength(emote, bpm), 2);
-	// 		console.log(emote);
-	// 		// if (emote == "4Head") {
-	// 			// playServo(servo1, 50);
-	// 		// }
-	// 	}
-	// 	// Convert note to MIDI note message.
-	// 	var note = parseInt(message.charCodeAt(0).map(33,126,0,127));
-	// 	// console.log(note);
-	// 	// Play note with max volume (127), lasts x ms, and on channel 1. 
-	// 	midiHelper.playNote(note, 127, getLength(message, bpm), 1);
-	// 	// playServo(servo2, 50);
-	// });
-
 })
 
 // Beats count over x seconds
-var duration = 5;
-var beats = setInterval(function() {
-	bpm = chatCount*60/duration;
-	console.log("BEATS PER MINUTES: " + bpm);
-	chatCount = 0;
-}, duration*1000);
+// var duration = 5;
+// var beats = setInterval(function() {
+// 	bpm = chatCount*60/duration;
+// 	console.log("BEATS PER MINUTES: " + bpm);
+// 	chatCount = 0;
+// }, duration*1000);
 
 //Copied this from StackOverflow cause I'm lazy.
 Number.prototype.map = function (in_min, in_max, out_min, out_max) {
 	return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-function playServo(x, y) {
-	if (x == undefined) {
+function playServo(servo, time, angle, reversed, offset) {
+	reversed = reversed || false;
+	angle = angle || 30;
+	offset = offset || 0;
+	if (servo == undefined) {
 		return;
 	}
+	if (reversed) {
+		angle = -angle;
+	} 
 
-	x.to(90);
+	servo.to(90+offset);
 	setTimeout (function() {
 		console.log("MOVE TO");
-		x.to(120);
-	}, y/2);
+		servo.to(90+offset+angle);
+	}, time/2);
 	setTimeout (function() {
 		console.log("MOVE BACK");
-		x.to(90);
-	}, y);
+		servo.to(90+offset);
+	}, time);
 }
+
+// Messy code currently written at 3:17 AM. I honestly do not care at this point.
+function playServoX(index, time) {
+	if (horz1 == undefined ||
+		horz2 == undefined ||
+		horz3 == undefined ||
+		horz4 == undefined ||
+		vert1 == undefined ||
+		vert2 == undefined) {
+		return;
+	}
+	switch(index) {
+		case 0:
+		playServo(horz1, time, 30);
+		break;
+
+		case 1:
+		playServo(horz2, time, 40);
+		break;
+
+		case 2:
+		playServo(horz3, 500, 30);
+		break;
+
+		case 3:
+		playServo(horz4, 500, 90, false, -15);
+		break;
+
+		case 4:
+		playServo(vert1, 500, 40);
+		break;
+
+		case 5:
+		playServo(vert2, 500, 30, false, 35);
+		break;
+	}
+}
+
 
 function parseEmote(text) {
 	var parseFlag = false;
@@ -178,19 +238,9 @@ function parseEmote(text) {
 }
 
 // Returns note length based on chat message length and beats per minute
-function getLength(text, bpm) {
+function getLength(text) {
 	// console.log(parseInt(text.length/10*(15/bpm)*1000));
 	return parseInt(text.length/10*(15/bpm)*1000);
-}
-
-module.switchChannel = function (clientObj, newChannel) {
-	// disconnectFrom();
-	clientObj.disconnect();
-	var newOptions = options;
-	newOptions.channels = [newChannel];
-	var clientObj = new tmi.client(newOptions);
-	// connectTo();
-	clientObj.connect();
 }
 
 // function exitHandler() {
