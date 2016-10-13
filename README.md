@@ -29,7 +29,7 @@ Everything that it's set out to do: It takes in command from the Twitch chat, dy
 
 - ~~Makes a sound: LED is for demonstration purposes only, and the code will need tinkering to work with other actuators, such as solenoids, motors, or servo. Refer to the Johnny-five documentation for that.~~
 
-- ~~Send any MIDI messages of any kind ~~
+- ~~Send any MIDI messages of any kind~~
 
 ## Instructions
 
