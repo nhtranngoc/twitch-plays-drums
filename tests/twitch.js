@@ -23,12 +23,13 @@ function getLength(text) {
 }
 
 function messageConv(string) {
-	return parseInt(string.charCodeAt(0).map(48,122,0,3));
-	// return parseInt(string.charCodeAt(0));
+	// return parseInt(string.charCodeAt(0).map(48,122,0,3));
+	return parseInt(string.charCodeAt(0));
 }
 
 function emoteConv(string) {
-	return parseInt(string.charCodeAt(0).map(48,122,0,1));
+	return parseInt(string.charCodeAt(0).map(52,90,0,1));
+	// return parseInt(string.charCodeAt(0));
 }
 
 //Copied this from StackOverflow cause I'm lazy.
@@ -37,12 +38,13 @@ Number.prototype.map = function (in_min, in_max, out_min, out_max) {
 }
 
 var abc = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+var emo = "4ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-for (var i=0;i<abc.length;i++){
-	console.log(messageConv(abc[i]));
+for (var i=0;i<emo.length;i++){
+	console.log(emo[i] + ": " + emoteConv(emo[i]));
 }
 
-console.log(parseEmote("PogChamp ASDFdslkfjasdf dlakds dank memes"));
-console.log(getLength("PogChamp ASDFdslkfjasdf dlakds dank memes"));
-console.log(parseEmote("asdf lkdsaf jasd"));
-console.log(getLength("asdf lkdsaf jasd"));
+// console.log(parseEmote("PogChamp ASDFdslkfjasdf dlakds dank memes"));
+// console.log(getLength("PogChamp ASDFdslkfjasdf dlakds dank memes"));
+// console.log(parseEmote("asdf lkdsaf jasd"));
+// console.log(getLength("asdf lkdsaf jasd"));

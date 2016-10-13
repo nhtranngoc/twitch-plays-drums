@@ -1,7 +1,6 @@
 'use strict'
 var tmi = require("tmi.js");
 // var midi = require('midi');
-
 var emotes = require("./data/emotes.json");
 
 var five = require('johnny-five');
@@ -34,15 +33,13 @@ var monitorFlag;
 // midiHelper.setInstrument("violin", 2);
 
 board.on("ready", function() {
-	vert2 = new five.Servo({pin: 11});
-	vert1 = new five.Servo({pin: 10});
+	mainClient.say(options.channels[0], "Server started. Please chat away!");
+	vert2 = new five.Servo({pin: 10});
+	vert1 = new five.Servo({pin: 11});
 	horz4 = new five.Servo({pin: 9});
 	horz3 = new five.Servo({pin: 6});
 	horz2 = new	five.Servo({pin: 5});
 	horz1 = new	five.Servo({pin: 3});
-
-	// var servos = new five.Servos([horz1, horz2, horz3, horz4, vert1, vert2]);
-	var servos = new five.Servos([horz1, horz2, horz4, vert1, vert2]);
 
 	mainClient.on("chat", function(channel, user, message, self) {
 		if (user.username == 'twitchplaysdrums'){
@@ -56,9 +53,17 @@ board.on("ready", function() {
 
 			switch(command) {
 				case "help":
-				var helpStr = "List of available commands: \n\n" +
-				"!startMonitor [channel_name]: Change the monitoring channel to channel_name. Defaults to twitchplaysdrums";
-				mainClient.say(options.channels[0], helpStr);
+				var helpStr_1 = "List of available commands: \n\n" +
+				"!startMonitor [channel_name]: Change the monitoring channel to channel_name. Defaults to twitchplaysdrums. \n\n" +
+				"!stopMonitor  [channel_name]: Stop monitoring channel_name. Defaults to twitchplaysdrums. \n\n" +
+				"!listMonitor : List all channels currently being monitored. \n\n";
+				var helpStr_2 = 
+				"!addInterval [interval_name] [servo_index] [interval_time]: Bind a servo at servo_index at interval_time, and names it interval_time (ms). \n\n" +
+				"!clearInterval [interval_name]: Unbind servo from interval with interval_name. \n\n" +
+				"!listInterval : List all intervals currently being ran.";
+
+				mainClient.say(options.channels[0], helpStr_1);
+				mainClient.say(options.channels[0], helpStr_2);
 				break;
 
 				case "startMonitor":
@@ -110,9 +115,37 @@ board.on("ready", function() {
 
 				// Servo [0 to 5], repeat every x milliseconds
 				case "addInterval":
-				var intervalName  = argv[1]
-				var intervalIndex = argv[2];
-				var intervalDelay = argv[3];
+				var intervalName  = argv[1];
+				var intervalIndex = parseInt(argv[2]);
+				var intervalDelay = parseInt(argv[3]);
+
+				if (intervalName in intervalObject) {
+					console.log("Nope exists");
+					mainClient.say(options.channels[0], "Sorry, this interval name is already taken. Please choose another name");
+					break;
+				};
+				console.log("Created interval " + intervalName + ", at servo " + intervalIndex + ", at " + intervalDelay + " ms");
+				intervalObject[intervalName] = setInterval(function() {
+					playServoX(intervalIndex, 500);
+				}, intervalDelay);
+				break;
+
+				case "clearInterval":
+				if (argv[1] in intervalObject) {
+					clearInterval(intervalObject[argv[1]]);
+					delete intervalObject[argv[1]];
+					mainClient.say(options.channels[0], "Cleared interval " + argv[1]);
+				} else {
+					mainClient.say(options.channels[0], "Could not find interval named " + argv[1] + " to delete");
+				}
+				break;
+
+				case "listInterval":
+				mainClient.say(options.channels[0], Object.keys(intervalObject).join(", "));
+				break;
+
+				default:
+				mainClient.say(options.channels[0], "This is not a valid command. Please try again xoxo");
 				break;
 			}
 		} else if (monitorFlag) {
@@ -120,8 +153,8 @@ board.on("ready", function() {
 			var emote = parseEmote(message);
 			if (emote) {
 				// Percussion value from 0 to 127;
-				var percussion = parseInt(emote.charCodeAt(0).map(48,122,0,1));
-				if (percussion) {
+				var percussion = parseInt(emote.charCodeAt(0));
+				if (percussion > 78) {
 					playServoX(4, 500);
 				} else {
 					playServoX(5, 500);
@@ -131,32 +164,24 @@ board.on("ready", function() {
 			var note = parseInt(message.charCodeAt(0).map(48,122,0,3));
 			switch(note) {
 				case 0:
-				playServoX(0, 300);
+				playServoX(0, 400);
 				break;
 
 				case 1:
-				playServoX(1, 300);
+				playServoX(1, 400);
 				break;
 
 				case 2:
-				playServoX(2, 300);
+				playServoX(2, 400);
 				break;
 
 				default:
-				playServoX(3, 300);
+				playServoX(3, 400);
 				break;
 			}
 		}
 	});	
 })
-
-// Beats count over x seconds
-// var duration = 5;
-// var beats = setInterval(function() {
-// 	bpm = chatCount*60/duration;
-// 	console.log("BEATS PER MINUTES: " + bpm);
-// 	chatCount = 0;
-// }, duration*1000);
 
 //Copied this from StackOverflow cause I'm lazy.
 Number.prototype.map = function (in_min, in_max, out_min, out_max) {
@@ -201,27 +226,26 @@ function playServoX(index, time) {
 		break;
 
 		case 1:
-		playServo(horz2, time, 40);
+		playServo(horz2, time, 50);
 		break;
 
 		case 2:
-		playServo(horz3, 500, 30);
+		playServo(horz3, time, 30);
 		break;
 
 		case 3:
-		playServo(horz4, 500, 90, false, -15);
+		playServo(horz4, time, 90, false, -15);
 		break;
 
 		case 4:
-		playServo(vert1, 500, 40);
+		playServo(vert1, time, 40);
 		break;
 
 		case 5:
-		playServo(vert2, 500, 30, false, 35);
+		playServo(vert2, time, 30, false, 35);
 		break;
 	}
 }
-
 
 function parseEmote(text) {
 	var parseFlag = false;
@@ -236,22 +260,3 @@ function parseEmote(text) {
 	}
 	return parseFlag;
 }
-
-// Returns note length based on chat message length and beats per minute
-function getLength(text) {
-	// console.log(parseInt(text.length/10*(15/bpm)*1000));
-	return parseInt(text.length/10*(15/bpm)*1000);
-}
-
-// function exitHandler() {
-// 	console.log("Exiting...");
-// 	allNotesOff();
-// 	output.closePort();
-// 	process.exit();
-// }
-
-// // catches close event
-// process.on('exit', exitHandler);
-
-// //catches ctrl+c event
-// process.on('SIGINT', exitHandler);
