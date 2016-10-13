@@ -19,8 +19,6 @@ var mainClient = new tmi.client(options);
 mainClient.connect();
 
 //Misc
-var chatCount = 0;
-var bpm = 60;
 var servo1, servo2;
 var channelList = new Set();
 var horz1, horz2, horz3, horz4, vert1, vert2;
@@ -32,6 +30,7 @@ var monitorFlag;
 // midiHelper.setInstrument("acoustic_grand_piano", 1);
 // midiHelper.setInstrument("violin", 2);
 
+// Wait for physical Arduino board to connect
 board.on("ready", function() {
 	mainClient.say(options.channels[0], "Server started. Please chat away!");
 	vert2 = new five.Servo({pin: 10});
@@ -44,6 +43,8 @@ board.on("ready", function() {
 	mainClient.on("chat", function(channel, user, message, self) {
 		if (user.username == 'twitchplaysdrums'){
 			// Ignore all self messages to avoid recursion.
+			// Could use this to add admin only commands - but be careful of recursion. 
+			// Will be banned for 2 hours if not. Trust me, I know.
 			return;
 		} else if (message.match(/^!/gi)) {
 			// Argument vector
@@ -125,12 +126,14 @@ board.on("ready", function() {
 					break;
 				};
 				console.log("Created interval " + intervalName + ", at servo " + intervalIndex + ", at " + intervalDelay + " ms");
+				// Create an interval, throws all data into the global object intervalObject;
 				intervalObject[intervalName] = setInterval(function() {
 					playServoX(intervalIndex, 500);
 				}, intervalDelay);
 				break;
 
 				case "clearInterval":
+				// If it exists, clear it, delete from tracker object, and announce it
 				if (argv[1] in intervalObject) {
 					clearInterval(intervalObject[argv[1]]);
 					delete intervalObject[argv[1]];
@@ -149,18 +152,18 @@ board.on("ready", function() {
 				break;
 			}
 		} else if (monitorFlag) {
-			chatCount++;
 			var emote = parseEmote(message);
 			if (emote) {
-				// Percussion value from 0 to 127;
+				// Percussion value, converted to Unicode number, then split in half;
 				var percussion = parseInt(emote.charCodeAt(0));
-				if (percussion > 78) {
+				if (percussion > 78) { //Half of [65-90];
 					playServoX(4, 500);
 				} else {
 					playServoX(5, 500);
 				}
 			}
 
+			// [48-122] is the range of Unicode characters for Latin letters (uppercase and lowercase) and numbers.
 			var note = parseInt(message.charCodeAt(0).map(48,122,0,3));
 			switch(note) {
 				case 0:
@@ -188,28 +191,37 @@ Number.prototype.map = function (in_min, in_max, out_min, out_max) {
 	return (this - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+
+// Middle-man function for controlling servo. We are not actually using this in the main loop.
+// Takes in servo Object, time in milliseconds
+// (Optional) takes in an angle (defaults to 30), if movement is reversed or not (defaults to false), and offset (defaults to 0);
 function playServo(servo, time, angle, reversed, offset) {
 	reversed = reversed || false;
 	angle = angle || 30;
 	offset = offset || 0;
+
+	// Edge case when playServo is invoked before Arduino is connected
 	if (servo == undefined) {
 		return;
 	}
+
 	if (reversed) {
 		angle = -angle;
 	} 
 
+	console.log("Servo moves to " + parseInt(90+offset+angle) + " and back to " + parseInt(90+offset));
+
 	servo.to(90+offset);
 	setTimeout (function() {
-		console.log("MOVE TO");
 		servo.to(90+offset+angle);
 	}, time/2);
 	setTimeout (function() {
-		console.log("MOVE BACK");
 		servo.to(90+offset);
 	}, time);
 }
 
+
+// Wrapper function for playServo() since each servo have different configurations - this could be better but screw it.
 // Messy code currently written at 3:17 AM. I honestly do not care at this point.
 function playServoX(index, time) {
 	if (horz1 == undefined ||
@@ -220,6 +232,7 @@ function playServoX(index, time) {
 		vert2 == undefined) {
 		return;
 	}
+
 	switch(index) {
 		case 0:
 		playServo(horz1, time, 30);
@@ -249,7 +262,6 @@ function playServoX(index, time) {
 
 function parseEmote(text) {
 	var parseFlag = false;
-	var splitText = text.split('');
 	for (var i in emotes.emotes) {
 		var re = new RegExp(i,"gi");
 		if (text.match(re)) {
